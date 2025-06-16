@@ -1,0 +1,8 @@
+[
+  { "nombre": "Caseta Tepotzotlán", "lat": 19.716533989167417, "lng": -99.2075124716339, "costo": 102 },
+  { "nombre": "Caseta Palmillas", "lat": 20.296048677792392, "lng": -99.9291828396505, "costo": 135 },
+  { "nombre": "Caseta Chalco", "lat": 19.2731, "lng": -98.8788, "costo": 97 },
+  { "nombre": "Caseta Tlalpan", "lat": 19.2572, "lng": -99.1497, "costo": 124 },
+  { "nombre": "Caseta La Venta", "lat": 16.7577, "lng": -93.1181, "costo": 56 },
+  { "nombre": "Arco Norte QRO", "lat":19.97698246825538, "lng":-99.53225123548593, "costo":60 }
+]

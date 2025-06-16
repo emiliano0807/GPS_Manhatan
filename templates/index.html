@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lenguajes y Autómatas</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.5em;
+            margin-top: 20px;
+            margin-bottom: 30px;
+            color: #facc15;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            text-shadow: 1px 1px 4px rgba(255, 255, 255, 0.2);
+        }
+
+        .header-image {
+            width: 50px;
+            height: auto;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background-color: #1e1e1e;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 0 25px rgba(255, 255, 255, 0.05);
+        }
+
+        .selector {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        label {
+            font-size: 1.1em;
+            color: #f3f4f6;
+        }
+
+        select {
+            padding: 10px;
+            border-radius: 8px;
+            border: 2px solid #facc15;
+            background-color: #2a2a2a;
+            color: #ffffff;
+            font-size: 1em;
+            width: 250px;
+        }
+
+        button {
+            padding: 12px 30px;
+            background-color: #facc15;
+            color: #000000;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #eab308;
+        }
+
+        #map {
+            height: 450px;
+            width: 100%;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+        }
+
+        .info {
+            text-align: center;
+            margin-top: 20px;
+            color: #a1a1aa;
+            font-size: 1.1em;
+        }
+
+        .info span {
+            font-weight: bold;
+            color: #ffffff;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            margin-top: 30px;
+            color: #d4d4d8;
+            font-size: 0.9em;
+        }
+
+        .form-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .form-group > div {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+
+        @media (max-width: 600px) {
+            .form-group {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .form-group > div {
+                width: 100%;
+            }
+
+            select {
+                width: 100%;
+            }
+        }
+    </style>
+    <script>
+  let map;
+  let origen = null;
+  let destino = null;
+  let marcadores = [];
+  let directionsService;
+  let directionsRenderer;
+
+  function initMap() {
+    map = new google.maps.Map(document.getElementById("map"), {
+      center: { lat: 23.6345, lng: -102.5528 }, // Centro de México
+      zoom: 5,
+    });
+
+    directionsService = new google.maps.DirectionsService();
+    directionsRenderer = new google.maps.DirectionsRenderer({
+      map,
+      suppressMarkers: true, // Evita los pines duplicados
+    });
+
+    map.addListener("click", (e) => {
+      if (!origen) {
+        origen = e.latLng;
+        const marcadorOrigen = new google.maps.Marker({
+          position: origen,
+          map,
+          label: "A",
+        });
+        marcadores.push(marcadorOrigen);
+      } else if (!destino) {
+        destino = e.latLng;
+        const marcadorDestino = new google.maps.Marker({
+          position: destino,
+          map,
+          label: "B",
+        });
+        marcadores.push(marcadorDestino);
+
+        calcularRuta(origen, destino);
+      }
+    });
+  }
+
+  
+  async function calcularRuta(origen, destino) {
+  directionsService.route(
+    {
+      origin: origen,
+      destination: destino,
+      travelMode: google.maps.TravelMode.DRIVING,
+    },
+    async (result, status) => {
+      if (status === "OK") {
+        directionsRenderer.setDirections(result);
+        const ruta = result.routes[0];
+
+        const distanciaTexto = ruta.legs[0].distance.text;
+        const duracion = ruta.legs[0].duration.text;
+        const distanciaKm = parseFloat(distanciaTexto.replace(",", "").replace(" km", ""));
+
+        // Simulación de gasolina
+        const rendimientoKmPorLitro = 12;
+        const precioPorLitro = 24;
+        const litrosConsumidos = distanciaKm / rendimientoKmPorLitro;
+        const gastoGasolina = litrosConsumidos * precioPorLitro;
+
+        // Obtener casetas reales y costos
+        const { gastoCasetas, casetasDetectadas } = await mostrarCasetasRealesEnRuta(ruta);
+        const gastoTotal = gastoCasetas + gastoGasolina;
+
+        // Mostrar resultado
+        document.getElementById("resultado").innerHTML = `
+          <p><strong>Distancia:</strong> ${distanciaKm.toFixed(2)} km</p>
+          <p><strong>Duración estimada:</strong> ${duracion}</p>
+          <p><strong>Gasolina:</strong> ${litrosConsumidos.toFixed(2)} L ($${gastoGasolina.toFixed(2)} MXN)</p>
+          <p><strong>Casetas detectadas:</strong><br>${casetasDetectadas.length > 0 ? casetasDetectadas.join("<br>") : "Ninguna"}</p>
+          <p><strong>Total Casetas:</strong> $${gastoCasetas.toFixed(2)} MXN</p>
+          <p><strong>Gasto total estimado:</strong> $${gastoTotal.toFixed(2)} MXN</p>
+        `;
+      } else {
+        alert("No se pudo calcular la ruta: " + status);
+      }
+    }
+  );
+}
+
+  async function mostrarCasetasRealesEnRuta(ruta) {
+  const pasos = ruta.legs[0].steps;
+  const tolerancia = 0.02; // tolerancia aumentada a 2 km aprox
+  let gastoCasetas = 0;
+  let casetasDetectadas = [];
+
+  try {
+    const respuesta = await fetch("/static/casetas_mexico.json");
+    const plazasCobro = await respuesta.json();
+
+    for (const plaza of plazasCobro) {
+      let encontrada = false;
+      for (const paso of pasos) {
+        const path = paso.path;
+        for (const puntoRuta of path) {
+          const plat = puntoRuta.lat();
+          const plng = puntoRuta.lng();
+
+          if (
+            Math.abs(plat - plaza.lat) <= tolerancia &&
+            Math.abs(plng - plaza.lng) <= tolerancia
+          ) {
+            const marcador = new google.maps.Marker({
+              position: { lat: plaza.lat, lng: plaza.lng },
+              map,
+              icon: {
+                url: "https://cdn-icons-png.flaticon.com/512/854/854894.png",
+                scaledSize: new google.maps.Size(30, 30),
+              },
+              title: plaza.nombre + ` ($${plaza.costo} MXN)`,
+            });
+
+            marcadores.push(marcador);
+            gastoCasetas += plaza.costo;
+            casetasDetectadas.push(`${plaza.nombre}: $${plaza.costo}`);
+            encontrada = true;
+            break;
+          }
+        }
+        if (encontrada) break;
+      }
+    }
+
+    return { gastoCasetas, casetasDetectadas };
+  } catch (error) {
+    console.error("Error cargando casetas:", error);
+    return { gastoCasetas: 0, casetasDetectadas: [] };
+  }
+}
+
+
+
+  function limpiarMapa() {
+    for (const marcador of marcadores) {
+      marcador.setMap(null);
+    }
+    marcadores = [];
+
+    if (directionsRenderer) {
+      directionsRenderer.setDirections({ routes: [] });
+    }
+
+    origen = null;
+    destino = null;
+    document.getElementById("resultado").innerHTML = "";
+  }
+</script>
+
+
+</head>
+<body>
+    <div class="container">
+        <h1>Calcula tu ruta <img src="/static/images/avion.png" alt="Avión" class="header-image"></h1>
+
+        </div>
+
+        <div class="info"></div>
+        <div style="text-align: center;">
+            <div id="map" style="height: 500px;"></div>
+            <div id="resultado" class="mt-4 text-white font-bold"></div>
+            <button onclick="limpiarMapa()" class="bg-red-600 text-white px-4 py-2 mt-4 rounded hover:bg-red-700">
+                Limpiar mapa
+            </button>
+
+        </div>
+
+
+
+    </div>
+
+    <div class="footer">
+        <p></p>
+    </div>
+
+</body>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyATseXRXJunPtS9HPA9RtoKSLbHJpRXqR8&callback=initMap" async defer></script>
+</html>
