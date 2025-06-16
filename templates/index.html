@@ -169,10 +169,12 @@
               const pasos = ruta.legs[0].steps;
 
               const distanciaTexto = ruta.legs[0].distance.text;
-              const duracion = ruta.legs[0].duration.text;
+              const duracionTexto = ruta.legs[0].duration.text;
               const distanciaKm = parseFloat(
                 distanciaTexto.replace(",", "").replace(" km", "")
               );
+              const duracionMin = ruta.legs[0].duration.value / 60;
+
               const rendimientoKmPorLitro = 12;
               const precioPorLitro = 24;
               const litrosConsumidos = distanciaKm / rendimientoKmPorLitro;
@@ -182,26 +184,49 @@
                 await mostrarCasetasRealesEnRuta(ruta);
               const gastoTotal = gastoGasolina + gastoCasetas;
 
+              // RESTRICCIONES
+              if (distanciaKm > 2500) {
+                alert("La ruta excede el límite de 500 km.");
+                limpiarMapa();
+                return;
+              }
+
+              if (duracionMin > 600) {
+                alert("La ruta excede el límite de 10 horas.");
+                limpiarMapa();
+                return;
+              }
+
+              if (casetasDetectadas.length > 10) {
+                alert("La ruta contiene más de 3 casetas.");
+                limpiarMapa();
+                return;
+              }
+
+              if (gastoTotal > 3000) {
+                alert("La ruta excede el gasto máximo permitido de $1000 MXN.");
+                limpiarMapa();
+                return;
+              }
+
               document.getElementById("resultado").innerHTML = `
-                    <p><strong>Distancia:</strong> ${distanciaKm.toFixed(
-                      2
-                    )} km</p>
-                    <p><strong>Duración estimada:</strong> ${duracion}</p>
-                    <p><strong>Gasolina estimada:</strong> ${litrosConsumidos.toFixed(
-                      2
-                    )} L ($${gastoGasolina.toFixed(2)} MXN)</p>
-                    <p><strong>Casetas:</strong> ${
-                      casetasDetectadas.length > 0
-                        ? casetasDetectadas.join("<br>")
-                        : "Ninguna"
-                    }</p>
-                    <p><strong>Total casetas:</strong> $${gastoCasetas.toFixed(
-                      2
-                    )} MXN</p>
-                    <p><strong>Gasto total:</strong> <strong>$${gastoTotal.toFixed(
-                      2
-                    )} MXN</strong></p>
-                `;
+              <p><strong>Distancia:</strong> ${distanciaKm.toFixed(2)} km</p>
+              <p><strong>Duración estimada:</strong> ${duracionTexto}</p>
+              <p><strong>Gasolina estimada:</strong> ${litrosConsumidos.toFixed(
+                2
+              )} L ($${gastoGasolina.toFixed(2)} MXN)</p>
+              <p><strong>Casetas:</strong> ${
+                casetasDetectadas.length > 0
+                  ? casetasDetectadas.join("<br>")
+                  : "Ninguna"
+              }</p>
+              <p><strong>Total casetas:</strong> $${gastoCasetas.toFixed(
+                2
+              )} MXN</p>
+              <p><strong>Gasto total:</strong> <strong>$${gastoTotal.toFixed(
+                2
+              )} MXN</strong></p>
+          `;
 
               const lista = document.getElementById("instrucciones");
               lista.innerHTML = "";
